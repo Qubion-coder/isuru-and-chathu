@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle, Loader2, Heart, Sparkles } from 'lucide-react';
+import { CheckCircle, Loader2, Heart, Sparkles, Phone } from 'lucide-react';
+import { GOOGLE_SCRIPT_URL } from '../config';
 
 export const RSVPForm: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
+    phone: '',
+    attendance: 'Joyfully Accept',
     guests: '1',
     dietaryNotes: '',
   });
@@ -15,22 +18,23 @@ export const RSVPForm: React.FC = () => {
     setStatus('loading');
 
     try {
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyay20jbF63BRUj8JGGbUbYkYS3Us-DpLZc2Hs34si_qKJgxs_81xpNBniXsBNFsYOt7g/exec';
-      const payload = new FormData();
-      payload.append('sheet', 'RSVP');
-      payload.append('name', formData.fullName);
-      payload.append('guests', formData.guests);
-      payload.append('dietary', formData.dietaryNotes);
-      payload.append('attendance', 'Yes');
+      const payload = new URLSearchParams({
+        sheet: 'RSVP',
+        name: formData.fullName,
+        phone: formData.phone,
+        attendance: formData.attendance,
+        guests: formData.attendance === 'Joyfully Accept' ? formData.guests : '0',
+        dietary: formData.dietaryNotes,
+      });
 
-      await fetch(scriptUrl, {
+      await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         body: payload,
       });
 
       setStatus('success');
-      setFormData({ fullName: '', guests: '1', dietaryNotes: '' });
+      setFormData({ fullName: '', phone: '', attendance: 'Joyfully Accept', guests: '1', dietaryNotes: '' });
     } catch (error) {
       console.error('Error sending RSVP: ', error);
       setStatus('error');
@@ -71,7 +75,21 @@ export const RSVPForm: React.FC = () => {
             Your presence means the world to us. Please kindly let us know if you will be able to join our celebration.
           </p>
 
-          <div className="w-12 h-[1px] bg-brand-beige/50 mx-auto lg:mx-0" />
+          <div className="w-12 h-[1px] bg-brand-beige/50 mx-auto lg:mx-0 mb-6" />
+
+          <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-stone-500 mb-3">For Inquiries</p>
+          <div className="flex flex-col sm:flex-row lg:flex-col items-center lg:items-start justify-center gap-2 sm:gap-6 lg:gap-2">
+            {['078 615 7134', '078 615 7132'].map((num) => (
+              <a
+                key={num}
+                href={`tel:${num.replace(/\s/g, '')}`}
+                className="inline-flex items-center gap-2 font-serif text-lg text-stone-700 hover:text-brand-beige-deep transition-colors"
+              >
+                <Phone className="w-4 h-4 text-brand-beige-deep" />
+                {num}
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* Right Side: Flowing Form */}
@@ -121,6 +139,39 @@ export const RSVPForm: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-stone-500 mb-3 ml-2">Phone Number</label>
+                  <input
+                    required
+                    type="tel"
+                    placeholder="E.g., 077 123 4567"
+                    className="w-full bg-white/80 px-6 py-4 rounded-full border border-stone-200/60 focus:ring-2 focus:ring-brand-beige/30 focus:border-brand-beige-deep/40 outline-none transition-all duration-300 font-serif italic text-lg shadow-inner placeholder:text-stone-300"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-stone-500 mb-3 ml-2">Will You Attend?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['Joyfully Accept', 'Regretfully Decline'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, attendance: option })}
+                        className={`px-4 py-4 rounded-full border font-serif italic text-base transition-all duration-300 ${
+                          formData.attendance === option
+                            ? 'bg-stone-800 text-brand-champagne border-stone-800 shadow-md'
+                            : 'bg-white/80 text-stone-600 border-stone-200/60 hover:border-brand-beige-deep/40'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {formData.attendance === 'Joyfully Accept' && (
+                <div>
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-stone-500 mb-3 ml-2">Number of Guests</label>
                   <div className="relative group">
                     <select
@@ -138,6 +189,7 @@ export const RSVPForm: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                )}
 
                 <div>
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-stone-500 mb-3 ml-2">Dietary Notes (Optional)</label>
@@ -158,7 +210,7 @@ export const RSVPForm: React.FC = () => {
                     {status === 'loading' ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      'Confirm Attendance'
+                      'Send Response'
                     )}
                   </button>
                 </div>

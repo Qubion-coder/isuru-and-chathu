@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Loader2, Sparkles } from 'lucide-react';
+import { GOOGLE_SCRIPT_URL } from '../config';
 
 interface Wish {
   id: string;
@@ -24,6 +25,22 @@ export const WishesSection: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Load previously shared wishes from the Google Sheet
+  useEffect(() => {
+    fetch(`${GOOGLE_SCRIPT_URL}?action=wishes`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data?.wishes)) return;
+        setWishes(
+          data.wishes.map((w: { id: string; name: string; message: string; createdAt: string }) => ({
+            ...w,
+            createdAt: new Date(w.createdAt),
+          }))
+        );
+      })
+      .catch((error) => console.error('Error loading wishes: ', error));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.message) return;
@@ -31,13 +48,13 @@ export const WishesSection: React.FC = () => {
 
     try {
       // Send data to Google Sheets
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyay20jbF63BRUj8JGGbUbYkYS3Us-DpLZc2Hs34si_qKJgxs_81xpNBniXsBNFsYOt7g/exec';
-      const payload = new FormData();
-      payload.append('sheet', 'Wishes');
-      payload.append('name', formData.name);
-      payload.append('message', formData.message);
+      const payload = new URLSearchParams({
+        sheet: 'Wishes',
+        name: formData.name,
+        message: formData.message,
+      });
 
-      await fetch(scriptUrl, {
+      await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         body: payload,
