@@ -19,7 +19,7 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    audioRef.current = new Audio('/song.mp3');
+    audioRef.current = new Audio('/numbamai-sande-malindu-chathuranga.mp3');
     audioRef.current.loop = true;
     audioRef.current.volume = 0.3;
     audioRef.current.preload = 'auto';
